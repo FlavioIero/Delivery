@@ -4,23 +4,56 @@ __lua__
 -- main --
 
 -- const
+game_states = {"menu","game","game_over"}
 
 -- var
+local state = game_states[1]
+gm = {}
+
+-- debug
+b = {}
 
 function _init()
-
+	start_game()
+	
+	-- debug
+	b = box.new(vector2.new(0,0),1,5)
 end
 
 function _update()
-
+	if state == game_states[1] then
+		update_menu()
+	elseif state == game_states[2] then
+		update_game()
+	elseif state == game_states[3] then
+		update_game_over()
+	end
 end
 
 function _draw()
-
+	if state == game_states[1] then
+		draw_menu()
+	elseif state == game_states[2] then
+		draw_game()
+	elseif state == game_states[3] then
+		draw_game_over()
+	end
 end
 
 function update_game()
-
+	b:update()
+	local x = 0
+	local y = 0
+	local spd = 5
+	if btn(➡️) then
+		x += spd end
+	if btn(⬅️) then
+		x -= spd end
+	if btn(⬇️) then
+		y += spd end
+	if btn(⬆️) then
+		y -= spd end
+	b:move(b.pos+vector2.new(x,y))
 end
 
 function update_menu()
@@ -32,7 +65,11 @@ function update_game_over()
 end
 
 function draw_game()
-
+	cls()
+	map(0,0,0,0,16,16)
+	spr(b.sprt,b.pos.x,b.pos.y)
+	print(b.desp_timer,50,20,7)
+	print("score: "..gm.score,80,10,10)
 end
 
 function draw_menu()
@@ -41,6 +78,11 @@ end
 
 function draw_game_over()
 
+end
+
+function start_game() 
+	state = game_states[2]
+	gm = game_mng.new()
 end
 -->8
 -- vector2 --
@@ -120,6 +162,13 @@ function pow(x,a)
   return ret
 end
 
+-- collisions
+function collide_rect(ax, ay, aw, ah, bx, by, bw, bh)
+ return ax < bx + bw and
+        ax + aw > bx and
+        ay < by + bh and
+        ay + ah > by
+end
 -->8
 -- player --
 
@@ -156,15 +205,6 @@ local sp_rate = 300
 
 -- base
 -->8
--- globals --
-
--- do not change 
-colors = {2,4,8,10,11,12,14,15}
-h_coll = {{4,32},{4,64},{4,96},{60,48},{52,80},{108,32},{108,64},{108,96}}
-box_sp = {{24,32},{24,64},{24,96},{48,48},{72,80},{96,32},{96,64},{96,96}}
-
-
--->8
 -- box --
 
 box = {}
@@ -174,7 +214,8 @@ box.__index = box
 local inner_col = 1
 local desp_time = 300
 local c_start_sprt = 41
-
+local light_sprt = 49
+local light_up = {{0,30},{150,10},{210,8},{250,4}}
 
 -- var
 
@@ -183,11 +224,37 @@ local c_start_sprt = 41
 
 function box.new(pos,start_col_i,target_col_i)
 	local s = target_col_i+c_start_sprt-1
-	return setmetatable({pos=pos,start_col_i=start_col_i,target_col_i=target_col_i,sprt=s,desp_timer=desp_time,hooked=false},box)
+	return setmetatable({pos=pos,start_col_i=start_col_i,target_col_i=target_col_i,sprt=s,desp_timer=0,hooked=false,light_idx=1},box)
 end
 
 function box:update()
-	
+	self:update_anim()
+	if self.desp_timer >= desp_time then
+		self:despawn()
+	end
+	if not self.hooked then
+		self.desp_timer += 1
+	end
+	self:collisions()
+end
+
+function box:update_anim()
+	if self.hooked then 
+		self.sprt = self.target_col_i+c_start_sprt-1
+		return 
+	end
+	local interval = 30
+	for i=#light_up,1,-1 do
+		if self.desp_timer >= light_up[i][1] then
+			interval = light_up[i][2]
+			break
+		end
+	end
+ if self.desp_timer%interval <= 2 then
+  self.sprt = light_sprt
+	else
+		self.sprt = self.target_col_i+c_start_sprt-1
+	end
 end
 
 function box:hook()
@@ -195,12 +262,51 @@ function box:hook()
 end
 
 function box:move(pos)
-	self.pos = pos
+	self.pos = pos:clone()
 end
 
 -- check collisions with correct house
-function box:collided()
-	local t = 
+function box:collisions()
+	local t = h_coll[self.target_col_i]
+	if (collide_rect(self.pos.x,self.pos.y,8,8,t[1],t[2],16,8)) then
+		gm:box_shipped()
+		self:despawn()
+	end
+end
+
+function box:despawn()
+	
+end
+-->8
+-- globals --
+
+-- do not change 
+colors = {2,4,8,10,11,12,14,15}
+h_coll = {{4,32},{4,64},{4,96},{60,48},{52,80},{108,32},{108,64},{108,96}}
+box_sp = {{24,32},{24,64},{24,96},{48,48},{72,80},{96,32},{96,64},{96,96}}
+
+max_boxes = 4
+
+
+-->8
+-- game_manager --
+
+game_mng = {}
+game_mng.__index = game_mng
+
+-- const
+local ship_score = 100
+
+-- var
+
+-- base
+
+function game_mng.new()
+	return setmetatable({score=0},game_mng)
+end
+
+function game_mng:box_shipped()
+	self.score += ship_score
 end
 __gfx__
 0000000077777777dddddddd00999900000000000000000000500500ddddddddd666666d777777770088880077755777dddddddddddddddddddddddd00000000
@@ -227,14 +333,14 @@ __gfx__
 222222222222222226622662aaaaaaaaaaaaaaaaa66aa66accccccccccccccccc66cc66c7222222774444447788888877aaaaaa77bbbbbb77cccccc77eeeeee7
 222222222222222226622662aaaaaaaaaaaaaaaaa66aa66accccccccccccccccc66cc66c7222222774444447788888877aaaaaa77bbbbbb77cccccc77eeeeee7
 222222222222222222222222aaaaaaaaaaaaaaaaaaaaaaaacccccccccccccccccccccccc07777770077777700777777007777770077777700777777007777770
-07777770000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-7ffffff7000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-7ffffff7000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-7ffffff7000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-7ffffff7000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-7ffffff7000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-7ffffff7000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-07777770000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+07777770077777700000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+7ffffff7777777770000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+7ffffff7777777770000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+7ffffff7777777770000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+7ffffff7777777770000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+7ffffff7777777770000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+7ffffff7777777770000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+07777770077777700000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
 00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
 00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
 00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
