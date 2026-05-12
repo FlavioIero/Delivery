@@ -9,9 +9,11 @@ game_states = {"menu","game","game_over"}
 -- var
 local state = game_states[1]
 gm = {}
+boxes = {}
 
 -- debug
 b = {}
+
 
 function _init()
 	start_game()
@@ -41,19 +43,26 @@ function _draw()
 end
 
 function update_game()
-	b:update()
-	local x = 0
-	local y = 0
-	local spd = 5
-	if btn(➡️) then
-		x += spd end
-	if btn(⬅️) then
-		x -= spd end
-	if btn(⬇️) then
-		y += spd end
-	if btn(⬆️) then
-		y -= spd end
-	b:move(b.pos+vector2.new(x,y))
+	-- debug
+	do
+		b:update()
+		local x = 0
+		local y = 0
+		local spd = 5
+		if btn(➡️) then
+			x += spd end
+		if btn(⬅️) then
+			x -= spd end
+		if btn(⬇️) then
+			y += spd end
+		if btn(⬆️) then
+			y -= spd end
+		b:move(b.pos+vector2.new(x,y))
+		for k,v in pairs(gm.boxes) do
+			v:move(v.pos+vector2.new(x,y))
+		end
+	end
+	gm:update()
 end
 
 function update_menu()
@@ -69,7 +78,14 @@ function draw_game()
 	map(0,0,0,0,16,16)
 	spr(b.sprt,b.pos.x,b.pos.y)
 	print(b.desp_timer,50,20,7)
-	print("score: "..gm.score,80,10,10)
+	print("score: "..gm.score,80,0,10)
+	for k,v in pairs(gm.boxes) do
+		spr(v.sprt,v.pos.x,v.pos.y)
+		print(gm.boxes[1].desp_timer,50,30,7)
+	end
+	for i=1,#gm.houses do
+		print(gm.houses[i].is_free,80,9*i,colors[i])
+	end
 end
 
 function draw_menu()
@@ -83,6 +99,7 @@ end
 function start_game() 
 	state = game_states[2]
 	gm = game_mng.new()
+	boxes = {}
 end
 -->8
 -- vector2 --
@@ -197,13 +214,29 @@ obstacle.__index = obstacle
 house = {}
 house.__index = house
 
--- const
-local sp_rate = 300 
+-- const 
+h_coll = {{4,32},{4,64},{4,96},{60,48},{52,80},{108,32},{108,64},{108,96}}
+box_sp = {{24,32},{24,64},{24,96},{48,48},{72,80},{96,32},{96,64},{96,96}}
 
 
 -- var
 
 -- base
+
+function house.new(idx)
+	return setmetatable({idx=idx,is_free=true},house)
+end
+
+function house:spawn(target)
+	local b_pos = vector2.new(box_sp[self.idx][1],box_sp[self.idx][2])
+	local b = box.new(b_pos,self.idx,target)
+	self.is_free = false
+	return b
+end	
+
+function house:free()
+	self.is_free = true
+end
 -->8
 -- box --
 
@@ -212,10 +245,10 @@ box.__index = box
 
 -- const
 local inner_col = 1
-local desp_time = 300
+local desp_time = 800
 local c_start_sprt = 41
 local light_sprt = 49
-local light_up = {{0,30},{150,10},{210,8},{250,4}}
+local light_up = {{0,30},{150,10},{210,8},{300,4}}
 
 -- var
 
@@ -224,7 +257,7 @@ local light_up = {{0,30},{150,10},{210,8},{250,4}}
 
 function box.new(pos,start_col_i,target_col_i)
 	local s = target_col_i+c_start_sprt-1
-	return setmetatable({pos=pos,start_col_i=start_col_i,target_col_i=target_col_i,sprt=s,desp_timer=0,hooked=false,light_idx=1},box)
+	return setmetatable({pos=pos,start_col_i=start_col_i,target_col_i=target_col_i,sprt=s,desp_timer=0,hooked=false,light_idx=1,destroy=false},box)
 end
 
 function box:update()
@@ -275,17 +308,15 @@ function box:collisions()
 end
 
 function box:despawn()
-	
+	self.destroy = true
 end
 -->8
 -- globals --
 
 -- do not change 
 colors = {2,4,8,10,11,12,14,15}
-h_coll = {{4,32},{4,64},{4,96},{60,48},{52,80},{108,32},{108,64},{108,96}}
-box_sp = {{24,32},{24,64},{24,96},{48,48},{72,80},{96,32},{96,64},{96,96}}
 
-max_boxes = 4
+
 
 
 -->8
@@ -296,17 +327,64 @@ game_mng.__index = game_mng
 
 -- const
 local ship_score = 100
+local spawn_freq = 20
+local spawn_rate = 0.1 -- 30%
+local max_boxes = 4
 
 -- var
 
 -- base
 
 function game_mng.new()
-	return setmetatable({score=0},game_mng)
+	local hs = {}
+	for i=1,#colors do
+		add(hs,house.new(i))
+	end
+	return setmetatable({boxes={},houses=hs,score=0,sp_timer=0},game_mng)
 end
 
-function game_mng:box_shipped()
+function game_mng:box_shipped(b)
 	self.score += ship_score
+end
+
+function game_mng:update()
+	self:try_spawn()
+	-- del boxes
+	for k,v in pairs(self.boxes) do
+		if v.destroy then
+			self.houses[v.start_col_i]:free()
+			del(self.boxes,v) 
+		end
+	end
+	for k,v in pairs(self.boxes) do
+		v:update()
+	end
+end
+
+function game_mng:try_spawn()
+	self.sp_timer += 1
+	if self.sp_timer >= spawn_freq then
+		if rnd(1) < spawn_rate and #self.boxes < max_boxes then
+			self:spawn() 
+		end
+			self.sp_timer = 0
+	elseif #self.boxes == 0 then
+			self:spawn()
+			self.sp_timer = 0
+	end
+end
+
+function game_mng:spawn()
+ local house_idx 
+	repeat
+		house_idx = flr(rnd(#colors))+1
+	until self.houses[house_idx].is_free
+	local t
+	repeat
+		t = flr(rnd(#colors))+1
+	until t ~= house_idx
+	local b = self.houses[house_idx]:spawn(t)
+	add(self.boxes,b)
 end
 __gfx__
 0000000077777777dddddddd00999900000000000000000000500500ddddddddd666666d777777770088880077755777dddddddddddddddddddddddd00000000
