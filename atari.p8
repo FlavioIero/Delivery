@@ -13,6 +13,7 @@ boxes = {}
 
 -- debug
 b = {}
+e = {}
 
 
 function _init()
@@ -20,6 +21,7 @@ function _init()
 	
 	-- debug
 	b = box.new(vector2.new(0,0),1,5)
+	e = enemy.new(30,100)
 end
 
 function _update()
@@ -61,6 +63,7 @@ function update_game()
 		for k,v in pairs(gm.boxes) do
 			v:move(v.pos+vector2.new(x,y))
 		end
+		e:update()
 	end
 	gm:update()
 end
@@ -86,6 +89,8 @@ function draw_game()
 	for i=1,#gm.houses do
 		print(gm.houses[i].is_free,80,9*i,colors[i])
 	end
+	spr(e.sprt,e.x,e.y)
+	spr(e.h_sprt,e.x,e.y-8)
 end
 
 function draw_menu()
@@ -198,16 +203,65 @@ player.__index = player
 
 -- base
 -->8
--- obstacle --
+-- enemy --
 
-obstacle = {}
-obstacle.__index = obstacle
+enemy = {}
+enemy.__index = enemy
 
 -- const
+local sprt_helix = {4,5}
+local helix_dur = 2 -- each helix spr lasts 2 frm
 
--- var
+function lerp(a,b,t)
+ return a+(b-a)*t
+end
 
--- base
+-- ease in-out
+function smoothstep(t)
+ return t*t*(3-2*t)
+end
+
+function enemy.new(x,y)
+ return setmetatable({x=x,
+  base_y=y,
+  y=y,
+  t=0,
+  dur=60, 
+  dir=1,
+  offset=80,
+  sprt=10,
+  h_sprt=sprt_helix[1],
+  h_sprt_i=1,
+  h_timer=0},enemy)
+end
+
+function enemy:update()
+ self.t += 1/self.dur
+
+ if self.t>=1 then
+  self.t=0
+  self.dir=-self.dir
+ end
+
+ local eased=smoothstep(self.t)
+
+ if self.dir==1 then
+  self.y=lerp(self.base_y,self.base_y-self.offset,eased)
+ else
+  self.y=lerp(self.base_y-self.offset,self.base_y,eased)
+ end
+ 
+ self:update_anim()
+end
+
+function enemy:update_anim()
+	self.h_timer += 1
+	if self.h_timer > helix_dur then
+		self.h_sprt_i = (self.h_sprt_i%#sprt_helix)+1
+		self.h_sprt = sprt_helix[self.h_sprt_i]
+		self.h_timer = 0
+	end
+end
 -->8
 -- house --
 
@@ -387,14 +441,14 @@ function game_mng:spawn()
 	add(self.boxes,b)
 end
 __gfx__
-0000000000000000dddddddd00999900000000000000000000500500ddddddddd666666d777777770088880077755777dddddddddddddddddddddddd00000000
-0000000000000000dddddddd09999990000000000000000005000050ddddddddd666666d777777770888888077555577dddddddddddddddddddddddd00000000
-0070070000000000dddddddd99799799000000000000000000500500ddd66ddddd6666dd777777778808808877755777dddddddddddddddddddddddd00000000
-0007700000000000dddddddd99099099000000000000000000000000ddd66ddddd6666dd666666668808808866666666ddd111111111111111111dddbbbbbbbb
-0007700000000000dddddddd99999999000000000000000000000000dd6666ddddd66ddd666666668888888866666666dd11111111111111111111ddbbbbbbbb
-0070070000000000dddddddd99999999666006660066660000000000dd6666ddddd66ddd000000008888888800000000d1111111111111111111111dbbbbbbbb
-0000000000000000dddddddd09999990000660000006600000000000d666666ddddddddddddddddd08888880ddddddddd1111111111111111111111dbbbbbbbb
-0000000000000000dddddddd00999900006666000066660000000000d666666ddddddddddddddddd00888800dddddddd111111111111111111111111bbbbbbbb
+0000000000000000dddddddd00999900000000000000000000500500ddddddddd666666d777777770088890077755777dddddddddddddddddddddddd00000000
+0000000000000000dddddddd09999990000000000000000005000050ddddddddd666666d777777770888889077555577dddddddddddddddddddddddd00000000
+0070070000000000dddddddd99799799000000000000000000500500ddd66ddddd6666dd77777777a8a88a8977755777dddddddddddddddddddddddd00000000
+0007700000000000dddddddd99099099000000000000000000000000ddd66ddddd6666dd66666666a8a88a8966666666ddd111111111111111111dddbbbbbbbb
+0007700000000000dddddddd99999999000000000000000000000000dd6666ddddd66ddd66666666a888888966666666dd11111111111111111111ddbbbbbbbb
+0070070000000000dddddddd99999999566006670056670000000000dd6666ddddd66ddd00000000a888888900000000d1111111111111111111111dbbbbbbbb
+0000000000000000dddddddd09999990000660000006600000000000d666666ddddddddddddddddd0a888880ddddddddd1111111111111111111111dbbbbbbbb
+0000000000000000dddddddd00999900005667000056670000000000d666666ddddddddddddddddd00a88800dddddddd111111111111111111111111bbbbbbbb
 888888888888888888888888f2000000bbbbbbbbbbbbbbbbbbbbbbbbeeeeeeeeeeeeeeeeeeeeeeeeffffffffffffffffffffffff444444444444444444444444
 88888888866886688888888884000000bbbbbbbbb66bb66bbbbbbbbbeeeeeeeee66ee66eeeeeeeeefffffffff66ff66fffffffff444444444664466444444444
 888888888668866888888888ae000000bbbbbbbbb66bb66bbbbbbbbbeeeeeeeee66ee66eeeeeeeeefffffffff66ff66fffffffff444444444664466444444444
