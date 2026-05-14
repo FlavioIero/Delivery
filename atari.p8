@@ -9,21 +9,21 @@ game_states = {"menu","game","game_over"}
 -- var
 local state = game_states[1]
 gm = {}
-boxes = {}
+e = {}
 
 -- debug
 b = {}
-e = {}
+
 p = {}
 
 
 function _init()
 	start_game()
-	
+	add(e,enemy.new(36,100))
+	add(e,enemy.new(84,100))
+	p = player.new(player_sp)
 	-- debug
-	b = box.new(vector2.new(0,0),1,5)
-	e = enemy.new(30,100)
-	p = player.new(vector2.new(8,32))
+	
 end
 
 function _update()
@@ -50,15 +50,16 @@ function update_game()
 	-- debug
 	do
 		--move_boxes()
-		e:update()
 	end
 	gm:update()
+	for k,v in pairs(e) do
+		v:update()
+	end
 	p:update()
 end
 
 -- delete
 function move_boxes()
-	b:update()
 	local x = 0
 	local y = 0
 	local spd = 5
@@ -70,7 +71,6 @@ function move_boxes()
 		y += spd end
 	if btn(⬆️) then
 		y -= spd end
-	b:move(b.pos+vector2.new(x,y))
 	for k,v in pairs(gm.boxes) do
 		v:move(v.pos+vector2.new(x,y))
 	end
@@ -87,8 +87,6 @@ end
 function draw_game()
 	cls()
 	map(0,0,0,0,16,16)
-	spr(b.sprt,b.pos.x,b.pos.y)
-	print(b.desp_timer,50,20,7)
 	print("score: "..gm.score,80,0,10)
 	for k,v in pairs(gm.boxes) do
 		spr(v.sprt,v.pos.x,v.pos.y)
@@ -97,8 +95,12 @@ function draw_game()
 	for i=1,#gm.houses do
 		print(gm.houses[i].is_free,80,9*i,colors[i])
 	end
-	e:draw()
+	for k,v in pairs(e) do
+		v:draw()
+	end
 	p:draw()
+	print(p_hit_spikes,50,110,12)
+	print(p_hit_enemy,50,120,12)
 end
 
 function draw_menu()
@@ -112,7 +114,6 @@ end
 function start_game() 
 	state = game_states[2]
 	gm = game_mng.new()
-	boxes = {}
 end
 -->8
 -- vector2 --
@@ -199,6 +200,14 @@ function collide_rect(ax, ay, aw, ah, bx, by, bw, bh)
         ay < by + bh and
         ay + ah > by
 end
+
+function collide_circle(x1,y1,r1,x2,y2,r2)
+ local dx = x2-x1
+ local dy = y2-y1
+ local dist_sq = dx*dx+dy*dy
+ local radius_sum = r1+r2
+ return dist_sq < radius_sum*radius_sum
+end
 -->8
 -- player --
 
@@ -213,6 +222,8 @@ local sprt_helix = {4,5}
 local helix_dur = 2 -- each helix spr lasts 2 frm
 local sprt = 3
 local claw_sprt = 6
+
+local kz = {15,123}
 
 -- var
 
@@ -230,6 +241,7 @@ function player:update()
 	end
 	self:update_anim()
 	self:handle_input()
+	self:check_collisions()
 end
 
 function player:update_anim()
@@ -262,13 +274,39 @@ end
 function player:shift(s)
 	self.pos = self.pos+s
 	if self.hooked then
-		self.box.pos = self.box.pos+s
+		self.box.pos = self.box.pos+s end
+end
+
+function player:move(p)
+	self.pos = p:clone()
+	if self.hooked then
+	 self.box.pos = p+vector2.new(0,10) end
+end
+
+function player:check_collisions()
+	if self.pos.y <= kz[1] or self.pos.y >= kz[2] then
+		self:hit_spikes() 
+		return 
+	end
+	if self.pos.x > 120 then
+		self:move(vector2.new(120,self.pos.y))
+	elseif self.pos.x < 0 then
+		self:move(vector2.new(0,self.pos.y))
+	end
+	
+	-- check other solid collisions
+
+	for k,v in pairs(e) do
+		if collide_circle(self.pos.x,self.pos.y,p_r,v.x,v.y,e_r) then
+		 self:hit_enemy()
+		 return
+		end
 	end
 end
 
 function player:try_hook()
 	for k,v in pairs(gm.boxes) do
-		if (collide_rect(self.pos.x,self.pos.y,8,10,v.pos.x,v.pos.y,8,8)) then
+		if collide_rect(self.pos.x,self.pos.y,8,10,v.pos.x,v.pos.y,8,8) then
 			self:hook(v)
 			return
 		end
@@ -293,6 +331,15 @@ function player:draw()
 	spr(claw_sprt,self.pos.x,self.pos.y+8)
 	spr(self.h_sprt,self.pos.x,self.pos.y-8)
 end
+
+function player:hit_spikes()
+	gm:player_hit_spikes()
+end
+
+function player:hit_enemy()
+	gm:player_hit_enemy()
+end
+
 -->8
 -- enemy --
 
@@ -467,8 +514,9 @@ end
 
 -- do not change 
 colors = {2,4,8,10,11,12,14,15}
-
-
+player_sp = vector2.new(8,32)
+p_r = 3.5
+e_r = 3.5
 
 
 -->8
@@ -537,6 +585,20 @@ function game_mng:spawn()
 	until t ~= house_idx
 	local b = self.houses[house_idx]:spawn(t)
 	add(self.boxes,b)
+end
+
+p_hit_spikes = false
+function game_mng:player_hit_spikes()
+	-- handle game state
+	
+	-- debug
+	p_hit_spikes = true
+end
+
+p_hit_enemy = false
+function game_mng:player_hit_enemy()
+	-- debug
+	p_hit_enemy = true
 end
 __gfx__
 0000000000000000dddddddd00999900000000000000000000500500ddddddddd666666d777777770088880077755777dddddddddddddddddddddddd00000000
