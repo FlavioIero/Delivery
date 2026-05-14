@@ -222,6 +222,7 @@ local sprt_helix = {4,5}
 local helix_dur = 2 -- each helix spr lasts 2 frm
 local sprt = 3
 local claw_sprt = 6
+local hp = 3
 
 local kz = {15,123}
 
@@ -338,6 +339,8 @@ end
 
 function player:hit_enemy()
 	gm:player_hit_enemy()
+	self.box.destroy = true
+	
 end
 
 -->8
@@ -514,11 +517,16 @@ end
 
 -- do not change 
 colors = {2,4,8,10,11,12,14,15}
-player_sp = vector2.new(8,32)
-p_r = 3.5
-e_r = 3.5
 
+-- can change
+player_sp = vector2.new(8,32) -- player spawn point 
+p_r = 3.5 -- player hb range
+e_r = 3.5 -- enemy hb range
+timer = 120 -- game timer
+max_hp = 3
 
+-- var
+hp = max_hp
 -->8
 -- game_manager --
 
@@ -528,7 +536,7 @@ game_mng.__index = game_mng
 -- const
 local ship_score = 100
 local spawn_freq = 20
-local spawn_rate = 0.1 -- 30%
+local spawn_rate = 0.3 -- 30%
 local max_boxes = 4
 
 -- var
