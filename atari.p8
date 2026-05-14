@@ -4,44 +4,40 @@ __lua__
 -- main --
 
 -- const
-game_states = {"menu","game","game_over"}
+game_states = {menu=1,game=2,game_over=3}
 
 -- var
-local state = game_states[1]
+state = game_states.menu
 gm = {}
 e = {}
+p = {}
 
 -- debug
 b = {}
 
-p = {}
-
-
 function _init()
 	start_game()
-	add(e,enemy.new(36,100))
-	add(e,enemy.new(84,100))
-	p = player.new(player_sp)
+
 	-- debug
 	
 end
 
 function _update()
-	if state == game_states[1] then
+	if state == game_states.menu then
 		update_menu()
-	elseif state == game_states[2] then
+	elseif state == game_states.game then
 		update_game()
-	elseif state == game_states[3] then
+	elseif state == game_states.game_over then
 		update_game_over()
 	end
 end
 
 function _draw()
-	if state == game_states[1] then
+	if state == game_states.menu then
 		draw_menu()
-	elseif state == game_states[2] then
+	elseif state == game_states.game then
 		draw_game()
-	elseif state == game_states[3] then
+	elseif state == game_states.game_over then
 		draw_game_over()
 	end
 end
@@ -89,8 +85,8 @@ function draw_game()
 	map(0,0,0,0,16,16)
 	print("score: "..gm.score,80,0,10)
 	for k,v in pairs(gm.boxes) do
-		spr(v.sprt,v.pos.x,v.pos.y)
-		print(gm.boxes[1].desp_timer,50,30,7)
+		if not v.destroy then
+			spr(v.sprt,v.pos.x,v.pos.y) end		
 	end
 	for i=1,#gm.houses do
 		print(gm.houses[i].is_free,80,9*i,colors[i])
@@ -101,19 +97,28 @@ function draw_game()
 	p:draw()
 	print(p_hit_spikes,50,110,12)
 	print(p_hit_enemy,50,120,12)
+	print(curr_timer,4,120,10)
+	for i=0,gm.hp-1 do
+		print("♥",2+i*6,1,8)
+	end
 end
 
 function draw_menu()
-
+	cls()
+	map(16,0,0,0,16,16)
 end
 
 function draw_game_over()
-
+	cls()
+	map(34,0,0,0,16,16)
 end
 
 function start_game() 
-	state = game_states[2]
+	state = game_states.game
 	gm = game_mng.new()
+	add(e,enemy.new(36,100))
+	add(e,enemy.new(84,100))
+	p = player.new(player_sp)
 end
 -->8
 -- vector2 --
@@ -339,8 +344,9 @@ end
 
 function player:hit_enemy()
 	gm:player_hit_enemy()
-	self.box.destroy = true
-	
+	if self.hooked then
+		self.box:despawn() end
+	self:move(player_sp)
 end
 
 -->8
@@ -522,11 +528,11 @@ colors = {2,4,8,10,11,12,14,15}
 player_sp = vector2.new(8,32) -- player spawn point 
 p_r = 3.5 -- player hb range
 e_r = 3.5 -- enemy hb range
-timer = 120 -- game timer
+game_timer = 10
 max_hp = 3
 
 -- var
-hp = max_hp
+bad_ending = false
 -->8
 -- game_manager --
 
@@ -540,6 +546,8 @@ local spawn_rate = 0.3 -- 30%
 local max_boxes = 4
 
 -- var
+curr_timer = game_timer
+local frm = 0
 
 -- base
 
@@ -548,7 +556,7 @@ function game_mng.new()
 	for i=1,#colors do
 		add(hs,house.new(i))
 	end
-	return setmetatable({boxes={},houses=hs,score=0,sp_timer=0},game_mng)
+	return setmetatable({boxes={},houses=hs,score=0,sp_timer=0,hp=max_hp},game_mng)
 end
 
 function game_mng:box_shipped(b)
@@ -566,6 +574,11 @@ function game_mng:update()
 	end
 	for k,v in pairs(self.boxes) do
 		v:update()
+	end
+	frm += 1
+	if frm >= 30 then
+		decrease_curr_timer(1)
+		frm = 0
 	end
 end
 
@@ -598,7 +611,7 @@ end
 p_hit_spikes = false
 function game_mng:player_hit_spikes()
 	-- handle game state
-	
+	bad_game_over()
 	-- debug
 	p_hit_spikes = true
 end
@@ -607,6 +620,32 @@ p_hit_enemy = false
 function game_mng:player_hit_enemy()
 	-- debug
 	p_hit_enemy = true
+	
+	if p.hooked then
+		if self:remove_hp(1) <= 0 then
+			bad_game_over() end
+	end
+end
+
+function game_mng:remove_hp(amount)
+	self.hp -= amount
+	return self.hp
+end
+
+function decrease_curr_timer(amount)
+	curr_timer -= amount
+	if curr_timer <= 0 then
+		timer_ended() end
+end
+
+function timer_ended()
+	bad_ending = false
+	state = game_states.game_over
+end
+
+function bad_game_over()
+	bad_ending = true
+	state = game_states.game_over
 end
 __gfx__
 0000000000000000dddddddd00999900000000000000000000500500ddddddddd666666d777777770088880077755777dddddddddddddddddddddddd00000000
