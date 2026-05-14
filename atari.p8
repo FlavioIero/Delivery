@@ -14,6 +14,7 @@ boxes = {}
 -- debug
 b = {}
 e = {}
+p = {}
 
 
 function _init()
@@ -22,6 +23,7 @@ function _init()
 	-- debug
 	b = box.new(vector2.new(0,0),1,5)
 	e = enemy.new(30,100)
+	p = player.new(vector2.new(8,32))
 end
 
 function _update()
@@ -47,25 +49,31 @@ end
 function update_game()
 	-- debug
 	do
-		b:update()
-		local x = 0
-		local y = 0
-		local spd = 5
-		if btn(➡️) then
-			x += spd end
-		if btn(⬅️) then
-			x -= spd end
-		if btn(⬇️) then
-			y += spd end
-		if btn(⬆️) then
-			y -= spd end
-		b:move(b.pos+vector2.new(x,y))
-		for k,v in pairs(gm.boxes) do
-			v:move(v.pos+vector2.new(x,y))
-		end
+		--move_boxes()
 		e:update()
 	end
 	gm:update()
+	p:update()
+end
+
+-- delete
+function move_boxes()
+	b:update()
+	local x = 0
+	local y = 0
+	local spd = 5
+	if btn(➡️) then
+		x += spd end
+	if btn(⬅️) then
+		x -= spd end
+	if btn(⬇️) then
+		y += spd end
+	if btn(⬆️) then
+		y -= spd end
+	b:move(b.pos+vector2.new(x,y))
+	for k,v in pairs(gm.boxes) do
+		v:move(v.pos+vector2.new(x,y))
+	end
 end
 
 function update_menu()
@@ -89,8 +97,8 @@ function draw_game()
 	for i=1,#gm.houses do
 		print(gm.houses[i].is_free,80,9*i,colors[i])
 	end
-	spr(e.sprt,e.x,e.y)
-	spr(e.h_sprt,e.x,e.y-8)
+	e:draw()
+	p:draw()
 end
 
 function draw_menu()
@@ -198,10 +206,92 @@ player = {}
 player.__index = player
 
 -- const
+local vel = 3
+local spd = 0
+local mov_frm = 0
+local sprt_helix = {4,5}
+local helix_dur = 2 -- each helix spr lasts 2 frm
+local sprt = 3
+local claw_sprt = 6
 
 -- var
 
 -- base
+
+function player.new(pos)
+	return setmetatable({pos=pos,sprt=sprt,hooked=false,box=nil,h_sprt=sprt_helix[1],h_sprt_i=1,h_timer=0},player)
+end
+
+function player:update()
+	if not self.box then 
+		self:unhook()
+	elseif self.box.destroy then
+		self:unhook()
+	end
+	self:update_anim()
+	self:handle_input()
+end
+
+function player:update_anim()
+	self.h_timer += 1
+	if self.h_timer > helix_dur then
+		self.h_sprt_i = (self.h_sprt_i%#sprt_helix)+1
+		self.h_sprt = sprt_helix[self.h_sprt_i]
+		self.h_timer = 0
+	end
+end
+
+-- temp
+function player:handle_input()
+	local x = 0
+	local y = 0
+	if btn(➡️) then
+		x += vel end
+	if btn(⬅️) then
+		x -= vel end
+	if btn(⬇️) then
+		y += vel end
+	if btn(⬆️) then
+		y -= vel end
+	self:shift(vector2.new(x,y))
+	if btnp(🅾️) and not self.hooked then
+		self:try_hook() end
+end
+
+-- temp
+function player:shift(s)
+	self.pos = self.pos+s
+	if self.hooked then
+		self.box.pos = self.box.pos+s
+	end
+end
+
+function player:try_hook()
+	for k,v in pairs(gm.boxes) do
+		if (collide_rect(self.pos.x,self.pos.y,8,10,v.pos.x,v.pos.y,8,8)) then
+			self:hook(v)
+		end
+	end
+end
+
+function player:hook(b)
+	self.hooked = true
+	self.box = b
+	self.box:hook()
+	local new_pos = vector2.new(self.pos.x,self.pos.y+10)
+	self.box:move(new_pos)
+end
+
+function player:unhook()
+	self.hooked = false
+	self.box = nil
+end
+
+function player:draw()
+	spr(self.sprt,self.pos.x,self.pos.y)
+	spr(claw_sprt,self.pos.x,self.pos.y+8)
+	spr(self.h_sprt,self.pos.x,self.pos.y-8)
+end
 -->8
 -- enemy --
 
@@ -211,6 +301,7 @@ enemy.__index = enemy
 -- const
 local sprt_helix = {4,5}
 local helix_dur = 2 -- each helix spr lasts 2 frm
+local claw_sprt = 6
 
 function lerp(a,b,t)
  return a+(b-a)*t
@@ -261,6 +352,12 @@ function enemy:update_anim()
 		self.h_sprt = sprt_helix[self.h_sprt_i]
 		self.h_timer = 0
 	end
+end
+
+function enemy:draw()
+	spr(self.sprt,self.x,self.y)
+	spr(self.h_sprt,self.x,self.y-8)
+	spr(claw_sprt,self.x,self.y+8)
 end
 -->8
 -- house --
@@ -441,14 +538,14 @@ function game_mng:spawn()
 	add(self.boxes,b)
 end
 __gfx__
-0000000000000000dddddddd00999900000000000000000000500500ddddddddd666666d777777770088890077755777dddddddddddddddddddddddd00000000
-0000000000000000dddddddd09999990000000000000000005000050ddddddddd666666d777777770888889077555577dddddddddddddddddddddddd00000000
-0070070000000000dddddddd99799799000000000000000000500500ddd66ddddd6666dd77777777a8a88a8977755777dddddddddddddddddddddddd00000000
-0007700000000000dddddddd99099099000000000000000000000000ddd66ddddd6666dd66666666a8a88a8966666666ddddddddddddddddddddddddbbbbbbbb
-0007700000000000dddddddd99999999000000000000000000000000dd6666ddddd66ddd66666666a888888966666666ddddddddddddddddddddddddbbbbbbbb
-0070070000000000dddddddd99999999566006670056670000000000dd6666ddddd66ddd00000000a888888900000000ddd111111111111111111dddbbbbbbbb
-0000000000000000dddddddd09999990000660000006600000000000d666666ddddddddddddddddd0a888880ddddddddd1111111111111111111111dbbbbbbbb
-0000000000000000dddddddd00999900005667000056670000000000d666666ddddddddddddddddd00a88800dddddddd111111111111111111111111bbbbbbbb
+0000000000000000dddddddd00999900000000000000000000500500ddddddddd666666d777777770088880077755777dddddddddddddddddddddddd00000000
+0000000000000000dddddddd09999990000000000000000005000050ddddddddd666666d777777770888888077555577dddddddddddddddddddddddd00000000
+0070070000000000dddddddd99799799000000000000000000500500ddd66ddddd6666dd7777777788a88a8877755777dddddddddddddddddddddddd00000000
+0007700000000000dddddddd99199199000000000000000000000000ddd66ddddd6666dd6666666688a88a8866666666ddddddddddddddddddddddddbbbbbbbb
+0007700000000000dddddddd99999999000000000000000000000000dd6666ddddd66ddd666666668888888866666666ddddddddddddddddddddddddbbbbbbbb
+0070070000000000dddddddd99999999666006660066660000000000dd6666ddddd66ddd000000008888888800000000ddd111111111111111111dddbbbbbbbb
+0000000000000000dddddddd09999990000660000006600000000000d666666ddddddddddddddddd08888880ddddddddd1111111111111111111111dbbbbbbbb
+0000000000000000dddddddd00999900006666000066660000000000d666666ddddddddddddddddd00888800dddddddd111111111111111111111111bbbbbbbb
 111111118666666811111111f200000011111111b666666b1111111111111111e666666e1111111111111111f666666f11111111111111114666666411111111
 1111111188866668111111118400000011111111bbb6666b1111111111111111eee6666e1111111111111111fff6666f11111111111111114446666411111111
 111111118886666811111111ae00000011111111bbb6666b1111111111111111eee6666e1111111111111111fff6666f11111111111111114446666411111111
