@@ -254,7 +254,7 @@ function player:handle_input()
 	if btn(⬆️) then
 		y -= vel end
 	self:shift(vector2.new(x,y))
-	if btnp(🅾️) and not self.hooked then
+	if not self.hooked then
 		self:try_hook() end
 end
 
@@ -270,6 +270,7 @@ function player:try_hook()
 	for k,v in pairs(gm.boxes) do
 		if (collide_rect(self.pos.x,self.pos.y,8,10,v.pos.x,v.pos.y,8,8)) then
 			self:hook(v)
+			return
 		end
 	end
 end
