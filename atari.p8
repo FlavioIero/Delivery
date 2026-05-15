@@ -169,8 +169,8 @@ function reset_var()
 	p = {}
 	
 	gm = game_mng.new()
-	add(e,enemy.new(36,100))
-	add(e,enemy.new(84,100))
+	add(e,enemy.new(36,100,1,80))
+	add(e,enemy.new(84,100,-1,80))
 	p = player.new(player_sp)
 	
 	-- game var
@@ -441,18 +441,42 @@ function smoothstep(t)
  return t*t*(3-2*t)
 end
 
-function enemy.new(x,y)
- return setmetatable({x=x,
-  base_y=y,
-  y=y,
+function enemy.new(x,y,dir,offset)
+ local top=y-offset
+ local bottom=y
+
+ local start_y
+ local target_a
+ local target_b
+
+ if dir==1 then
+  start_y=bottom
+  target_a=bottom
+  target_b=top
+ else
+  start_y=top
+  target_a=top
+  target_b=bottom
+ end
+
+ return setmetatable({
+  x=x,
+
+  y=start_y,
+
+  from_y=target_a,
+  to_y=target_b,
+
   t=0,
-  dur=60, 
-  dir=1,
-  offset=80,
+  dur=60,
+
+  offset=offset,
+
   sprt=10,
   h_sprt=sprt_helix[1],
   h_sprt_i=1,
-  h_timer=0},enemy)
+  h_timer=0
+ },enemy)
 end
 
 function enemy:update()
@@ -460,17 +484,19 @@ function enemy:update()
 
  if self.t>=1 then
   self.t=0
-  self.dir=-self.dir
+
+  self.from_y,self.to_y=
+  self.to_y,self.from_y
  end
 
  local eased=smoothstep(self.t)
 
- if self.dir==1 then
-  self.y=lerp(self.base_y,self.base_y-self.offset,eased)
- else
-  self.y=lerp(self.base_y-self.offset,self.base_y,eased)
- end
- 
+ self.y=lerp(
+  self.from_y,
+  self.to_y,
+  eased
+ )
+
  self:update_anim()
 end
 
