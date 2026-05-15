@@ -364,10 +364,10 @@ function player:handle_input()
 		x -= vel end
 	
 	self:move(vector2.new(x,y))
-	while self:platforms_collide() and x ~= 0 do
-		if x < 0 then
+	while self:platforms_collide() and x ~= lx do
+		if x < lx then
 			x += 1
-		elseif x > 0 then
+		elseif x > lx then
 			x -= 1
 		end
 		self:move(vector2.new(x,y)) 
@@ -380,10 +380,10 @@ function player:handle_input()
 		y -= vel end
 		
 	self:move(vector2.new(x,y))
-	while self:platforms_collide() and y ~= 0 do
-		if y < 0 then
+	while self:platforms_collide() and zy ~= 0 do
+		if y < ly then
 			y += 1
-		elseif y > 0 then
+		elseif y > ly then
 			y -= 1
 		end
 		self:move(vector2.new(x,y)) 
@@ -471,7 +471,7 @@ end
 
 function player:platforms_collide()
  local tl = self.pos:clone()
- local br = self.pos:clone()+vector2.new(8,8)
+ local br = self.pos:clone()+vector2.new(7,7)
 
  local tx1 = flr(tl.x/8)
  local ty1 = flr(tl.y/8)
