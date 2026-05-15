@@ -23,13 +23,10 @@ local not_show_go_to_menu = 20
 local game_over_frm = 0
 
 -- debug
-b = {}
+
 
 function _init()
-	start_game()
-
-	-- debug
-	
+	reset_var()
 end
 
 function _update()
@@ -84,7 +81,9 @@ end
 
 function update_menu()
 	if btnp(❎) then
-		state = game_states.game end
+		state = game_states.game 
+		reset_var()
+	end
 	menu_frm += 1
 end
 
@@ -155,17 +154,26 @@ function draw_game_over()
 	end
 end
 
-function start_game() 
-	state = game_states.menu
+-- resets all game variables (not high score)
+function reset_var()
+	gm = {}
+	e = {}
+	p = {}
+	
 	gm = game_mng.new()
 	add(e,enemy.new(36,100))
 	add(e,enemy.new(84,100))
 	p = player.new(player_sp)
-end
 
--- resets all game variables (not high score)
-function reset_var()
+	-- menu-var
+ show_start = 20 
+ not_show_start = 20
+ menu_frm = 0
 
+	-- game-over-var
+ show_go_to_menu = 20
+ not_show_go_to_menu = 20
+ game_over_frm = 0
 end
 -->8
 -- vector2 --
@@ -271,18 +279,22 @@ local vel = 3
 local spd = 0
 local mov_frm = 0
 local sprt_helix = {4,5}
-local helix_dur = 2 -- each helix spr lasts 2 frm
 local sprt = 3
 local claw_sprt = 6
-local hp = 3
 
 local kz = {15,123}
 
 -- var
+local helix_dur = 2 -- each helix spr lasts 2 frm
 
 -- base
 
+function reset_var_player()
+	helix_dur = 2
+end
+
 function player.new(pos)
+	reset_var_player()
 	return setmetatable({pos=pos,sprt=sprt,hooked=false,box=nil,h_sprt=sprt_helix[1],h_sprt_i=1,h_timer=0},player)
 end
 
@@ -503,7 +515,7 @@ local inner_col = 1
 local desp_time = 800
 local c_start_sprt = 41
 local light_sprt = 49
-local light_up = {{0,30},{150,10},{210,8},{300,4}}
+local light_up = {{0,30},{350,20},{500,10},{600,5}}
 
 -- var
 
@@ -570,6 +582,7 @@ end
 
 -- do not change 
 colors = {2,4,8,10,11,12,14,15}
+high_score = 0
 
 -- can change
 player_sp = vector2.new(8,32) -- player spawn point 
@@ -578,8 +591,6 @@ e_r = 3.5 -- enemy hb range
 game_timer = 10
 max_hp = 3
 
--- var
-bad_ending = false
 -->8
 -- game_manager --
 
@@ -598,12 +609,18 @@ local frm = 0
 
 -- base
 
+function reset_var_gm()
+	curr_timer = game_timer
+ frm = 0
+end
+
 function game_mng.new()
+	reset_var_gm()
 	local hs = {}
 	for i=1,#colors do
 		add(hs,house.new(i))
 	end
-	return setmetatable({boxes={},houses=hs,score=0,high_score=0,record=false,sp_timer=0,hp=max_hp,bad_ending=false},game_mng)
+	return setmetatable({boxes={},houses=hs,score=0,high_score=high_score,record=false,sp_timer=0,hp=max_hp,bad_ending=false},game_mng)
 end
 
 function game_mng:box_shipped(b)
@@ -694,6 +711,9 @@ end
 function game_mng:update_score()
 	if self.score > self.high_score then
 		self.high_score = self.score 
+		-- updates global hs so that it 
+		-- is easier to reset variables
+		high_score = self.score
 		self.record = true
 	end
 end
