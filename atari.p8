@@ -4,7 +4,7 @@ __lua__
 -- main --
 
 -- const
-game_states = {menu=1,game=2,game_over=3}
+game_states = {menu=1,menu_to_game=2,game=3,game_over=4}
 
 -- var
 state = game_states.menu
@@ -19,10 +19,20 @@ local music_on = false
 local game_start = 0
 local game_start_frm = 0
 
+-- menu to game var
+local menu_to_game_dur = 50
+local menu_to_game_frm = 0
+
 -- menu-var
 local show_start = 20 
 local not_show_start = 20
 local menu_frm = 0
+-- bisegnax menu
+local t_cols = {10,1}
+local t_col_i = 1
+local t_frm = 0
+local t_col_dur = 30
+local t_col_dur_on_start = 3
 
 -- game-over-var
 local show_go_to_menu = 20
@@ -39,6 +49,8 @@ end
 function _update()
 	if state == game_states.menu then
 		update_menu()
+	elseif state == game_states.menu_to_game then
+		update_menu_to_game()
 	elseif state == game_states.game then
 		update_game()
 	elseif state == game_states.game_over then
@@ -47,7 +59,8 @@ function _update()
 end
 
 function _draw()
-	if state == game_states.menu then
+	if state == game_states.menu 
+		or state == game_states.menu_to_game then
 		draw_menu()
 	elseif state == game_states.game then
 		draw_game()
@@ -86,14 +99,28 @@ function move_boxes()
 	end
 end
 
-function update_menu()
-	if btnp(❎) then
+function update_menu_to_game()
+	menu_to_game_frm += 1
+	if menu_to_game_frm > menu_to_game_dur then
 		state = game_states.game 
 		reset_var()
-		--sfx(10)
 		sfx(4)
 	end
 	menu_frm += 1
+	t_frm += 1
+end
+
+function update_menu()
+	if btnp(❎) then
+		state = game_states.menu_to_game 
+		t_col_dur = t_col_dur_on_start
+		--t_frm = 0
+		--reset_var()
+		sfx(10)
+		--sfx(4)
+	end
+	menu_frm += 1
+	t_frm += 1
 end
 
 function update_game_over()
@@ -131,7 +158,29 @@ end
 
 function draw_menu()
 	cls()
-	map(16,0,0,0,16,16)
+	--map(16,0,0,0,16,16)
+	
+	-- bisegnax
+ local larghezza_totale = 103
+ local x_centro = (128 - larghezza_totale) / 2
+ local y_centro = 40 
+	
+	
+		
+	if t_frm <= t_col_dur then
+		t_col_i = 1 
+	elseif t_frm <= t_col_dur*2 then
+		t_col_i = 2
+	else
+		t_frm = 0 
+	end
+	
+ disegna_parola_solida("delivery",x_centro+1,y_centro+1,9) -- bg
+ disegna_parola_solida("delivery",x_centro,y_centro,t_cols[t_col_i]) -- fg
+
+ rectfill(0, 63, 128, 63, 0) 
+	-- end bisegnax
+	
 	local s = "high score: "..gm.high_score
 	print_ctr_w(s,64,7)
 	if menu_frm <= show_start then
@@ -180,7 +229,7 @@ function reset_var()
 	p = player.new(player_sp)
 	
 	-- game var
- game_start = 1 -- 110 is perfect!
+ game_start = 110 -- 110 is perfect!
  game_start_frm = 0
  
 	-- menu-var
@@ -192,6 +241,27 @@ function reset_var()
  show_go_to_menu = 20
  not_show_go_to_menu = 20
  game_over_frm = 0
+ 
+ -- menu to game var
+ menu_to_game_dur = 30
+ menu_to_game_frm = 0
+
+	-- bisegnax menu
+ font_atari = {
+  d = {1,1,0, 1,0,1, 1,0,1, 1,0,1, 1,1,0},
+  e = {1,1,1, 1,0,0, 1,1,0, 1,0,0, 1,1,1},
+  l = {1,0,0, 1,0,0, 1,0,0, 1,0,0, 1,1,1},
+  i = {1,1,1, 0,1,0, 0,1,0, 0,1,0, 1,1,1},
+  v = {1,0,1, 1,0,1, 1,0,1, 1,0,1, 0,1,0},
+  r = {1,1,0, 1,0,1, 1,1,0, 1,0,1, 1,0,1},
+  y = {1,0,1, 1,0,1, 0,1,0, 0,1,0, 0,1,0}
+ }
+ 
+	t_cols = {10,1}
+	t_col_i = 1
+	t_frm = 0
+	t_col_dur = 30
+	t_col_dur_on_start = 4
 end
 
 function start_music()
@@ -204,6 +274,30 @@ end
 function stop_music()
 	music(-1)
 	music_on = false
+end
+
+function disegna_parola_solida(testo, x, y, col)
+ local cx = x
+ for i=1, #testo do
+  local let = sub(testo, i, i)
+  local dati = font_atari[let]
+
+  if dati != nil then
+   for r=0, 4 do
+    for c=0, 2 do
+     local idx = r * 3 + c + 1
+     if dati[idx] == 1 then
+      local px = cx + c * 4
+      local py = y + r * 2
+
+      -- riempie un blocco di 4x2 pixel senza lasciare buchi
+      rectfill(px, py, px + 3, py + 1, col)
+     end
+    end
+   end
+  end
+  cx += 13 -- spazio fisso tra le lettere
+ end
 end
 -->8
 -- vector2 --
@@ -312,7 +406,7 @@ local sprt_helix = {4,5}
 local sprt = 3
 local claw_sprts = {unhooked=6,hooked=59}
 
-local kz = {15,123}
+local kz = {14,115}
 
 -- var
 local helix_dur = 2 -- each helix spr lasts 2 frm
