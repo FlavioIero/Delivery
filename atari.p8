@@ -343,7 +343,7 @@ function player:handle_input()
 	if btn(⬆️) then
 		y -= vel end
 	self:shift(vector2.new(x,y))
-	if not self.hooked then
+	if btnp(🅾️) and not self.hooked then
 		self:try_hook() end
 end
 
