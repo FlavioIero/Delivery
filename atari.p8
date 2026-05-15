@@ -12,6 +12,12 @@ gm = {}
 e = {}
 p = {}
 
+-- change the values down here  
+-- in the function reset_var()
+-- game var
+local game_start = 0
+local game_start_frm = 0
+
 -- menu-var
 local show_start = 20 
 local not_show_start = 20
@@ -50,10 +56,9 @@ function _draw()
 end
 
 function update_game()
-	-- debug
-	do
-		--move_boxes()
-	end
+	game_start_frm += 1
+	if game_start_frm < game_start then 
+		return end
 	gm:update()
 	for k,v in pairs(e) do
 		v:update()
@@ -83,6 +88,7 @@ function update_menu()
 	if btnp(❎) then
 		state = game_states.game 
 		reset_var()
+		sfx(4)
 	end
 	menu_frm += 1
 end
@@ -96,6 +102,8 @@ end
 function draw_game()
 	cls()
 	map(0,0,0,0,16,16)
+	--if game_start_frm < game_start then 
+		--return end
 	print("score: "..gm.score,80,0,10)
 	for k,v in pairs(gm.boxes) do
 		if not v.destroy then
@@ -164,7 +172,11 @@ function reset_var()
 	add(e,enemy.new(36,100))
 	add(e,enemy.new(84,100))
 	p = player.new(player_sp)
-
+	
+	-- game var
+ game_start = 110 -- 110 is perfect!
+ game_start_frm = 0
+ 
 	-- menu-var
  show_start = 20 
  not_show_start = 20
@@ -371,7 +383,7 @@ end
 
 function player:try_hook()
 	for k,v in pairs(gm.boxes) do
-		if collide_rect(self.pos.x,self.pos.y,8,10,v.pos.x,v.pos.y,8,8) then
+		if collide_rect(self.pos.x,self.pos.y,8,10,v.pos.x,v.pos.y,8,8) and not v.destroy then
 			self:hook(v)
 			return
 		end
@@ -384,6 +396,7 @@ function player:hook(b)
 	self.box:hook()
 	local new_pos = vector2.new(self.pos.x,self.pos.y+10)
 	self.box:move(new_pos)
+	sfx(0)
 end
 
 function player:unhook()
@@ -530,6 +543,7 @@ end
 function box:update()
 	self:update_anim()
 	if self.desp_timer >= desp_time then
+		sfx(3)
 		self:despawn()
 	end
 	if not self.hooked then
@@ -588,7 +602,7 @@ high_score = 0
 player_sp = vector2.new(8,32) -- player spawn point 
 p_r = 3.5 -- player hb range
 e_r = 3.5 -- enemy hb range
-game_timer = 10
+game_timer = 100
 max_hp = 3
 
 -->8
@@ -625,6 +639,7 @@ end
 
 function game_mng:box_shipped(b)
 	self.score += ship_score
+	sfx(1)
 end
 
 function game_mng:update()
@@ -632,6 +647,8 @@ function game_mng:update()
 	-- del boxes
 	for k,v in pairs(self.boxes) do
 		if v.destroy then
+			if not v.hooked then
+				self:box_despawned() end
 			self.houses[v.start_col_i]:free()
 			del(self.boxes,v) 
 		end
@@ -670,10 +687,12 @@ function game_mng:spawn()
 	until t ~= house_idx
 	local b = self.houses[house_idx]:spawn(t)
 	add(self.boxes,b)
+	sfx(6)
 end
 
 p_hit_spikes = false
 function game_mng:player_hit_spikes()
+	--sfx(2)
 	-- handle game state
 	self:bad_game_over()
 	-- debug
@@ -687,7 +706,22 @@ function game_mng:player_hit_enemy()
 	
 	if p.hooked then
 		if self:remove_hp(1) <= 0 then
-			self:bad_game_over() end
+			self:bad_game_over() 
+		else
+			sfx(2)
+		end
+	else
+		sfx(2)
+	end
+end
+
+function game_mng:box_despawned()
+	--sfx(3)
+	--sfx(2)
+	if self:remove_hp(1) <= 0 then
+		self:bad_game_over() 
+	else
+		sfx(3)
 	end
 end
 
@@ -706,6 +740,7 @@ function game_mng:timer_ended()
 	self:update_score()
 	self.bad_ending = false
 	state = game_states.game_over
+	sfx(5)
 end
 
 function game_mng:update_score()
@@ -721,6 +756,7 @@ end
 function game_mng:bad_game_over()
 	self.bad_ending = true
 	state = game_states.game_over
+	sfx(5)
 end
 __gfx__
 0000000000000000dddddddd00999900000000000000000000500500ddddddddd666666d777777770088880077755777dddddddddddddddddddddddd00000000
