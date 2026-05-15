@@ -11,6 +11,7 @@ state = game_states.menu
 gm = {}
 e = {}
 p = {}
+local music_on = false
 
 -- change the values down here  
 -- in the function reset_var()
@@ -59,6 +60,7 @@ function update_game()
 	game_start_frm += 1
 	if game_start_frm < game_start then 
 		return end
+	start_music()
 	gm:update()
 	for k,v in pairs(e) do
 		v:update()
@@ -88,6 +90,7 @@ function update_menu()
 	if btnp(❎) then
 		state = game_states.game 
 		reset_var()
+		--sfx(10)
 		sfx(4)
 	end
 	menu_frm += 1
@@ -95,7 +98,9 @@ end
 
 function update_game_over()
 	if btnp(❎) then
-		state = game_states.menu end
+		state = game_states.menu 
+		sfx(10)
+	end
 	game_over_frm += 1
 end
 
@@ -186,6 +191,18 @@ function reset_var()
  show_go_to_menu = 20
  not_show_go_to_menu = 20
  game_over_frm = 0
+end
+
+function start_music()
+	if not music_on then
+		music(0)
+		music_on = true
+	end
+end
+
+function stop_music()
+	music(-1)
+	music_on = false
 end
 -->8
 -- vector2 --
@@ -631,7 +648,7 @@ high_score = 0
 player_sp = vector2.new(8,32) -- player spawn point 
 p_r = 3.5 -- player hb range
 e_r = 3.5 -- enemy hb range
-game_timer = 100
+game_timer = 5
 max_hp = 3
 
 -->8
@@ -769,6 +786,7 @@ function game_mng:timer_ended()
 	self:update_score()
 	self.bad_ending = false
 	state = game_states.game_over
+	stop_music()
 	sfx(5)
 end
 
@@ -785,6 +803,7 @@ end
 function game_mng:bad_game_over()
 	self.bad_ending = true
 	state = game_states.game_over
+	stop_music()
 	sfx(5)
 end
 __gfx__
