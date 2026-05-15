@@ -5,6 +5,7 @@ __lua__
 
 -- const
 game_states = {menu=1,menu_to_game=2,game=3,game_over=4}
+title = 2 -- 1 or 2
 
 -- var
 state = game_states.menu
@@ -175,9 +176,18 @@ function draw_menu()
 		t_frm = 0 
 	end
 	
- disegna_parola_solida("delivery",x_centro+1,y_centro+1,9) -- bg
- disegna_parola_solida("delivery",x_centro,y_centro,t_cols[t_col_i]) -- fg
-
+	if title == 1 then
+		disegna_parola_solida("delivery",x_centro+1,y_centro+1,9) -- bg
+	 disegna_parola_solida("delivery",x_centro,y_centro,t_cols[t_col_i]) -- fg
+ elseif title == 2 then
+	 if t_col_i == 1 then
+	 	disegna_parola_solida("delivery",x_centro+1,y_centro+1,9) -- bg
+	 	disegna_parola_solida("delivery",x_centro,y_centro,t_cols[t_col_i]) -- fg
+		else
+			disegna_parola_solida("delivery",x_centro+1,y_centro+1,t_cols[1]) -- bg
+		end
+	end
+	
  rectfill(0, 63, 128, 63, 0) 
 	-- end bisegnax
 	
