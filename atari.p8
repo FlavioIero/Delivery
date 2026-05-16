@@ -8,7 +8,7 @@ game_states = {menu=1,menu_to_game=2,game=3,game_over=4}
 title = 1 -- 1 or 2
 
 -- var
-state = game_states.game
+state = game_states.game_over
 gm = {}
 e = {}
 p = {}
@@ -21,7 +21,7 @@ local game_start = 0
 local game_start_frm = 0
 
 -- menu to game var
-local menu_to_game_dur = 50
+local menu_to_game_dur = 30
 local menu_to_game_frm = 0
 
 -- menu-var
@@ -39,7 +39,11 @@ local t_col_dur_on_start = 3
 local show_go_to_menu = 20
 local not_show_go_to_menu = 20
 local game_over_frm = 0
-
+-- bisegnax game-over
+local go_cols = {10,1}
+local go_col_i = 1
+local go_frm = 0
+local go_col_dur = 30
 -- debug
 
 
@@ -131,6 +135,7 @@ function update_game_over()
 		sfx(10)
 	end
 	game_over_frm += 1
+	go_frm += 1
 end
 
 function draw_game()
@@ -203,10 +208,19 @@ function draw_game_over()
  local x_testo = (128-larghezza_testo) / 2 -- coordinata x: 6
  local y_testo = 30 
  
+ if go_frm <= go_col_dur then
+		go_col_i = 1 
+	elseif go_frm <= go_col_dur*2 then
+		go_col_i = 2
+	else
+		go_frm = 0 
+	end
+	
  local stringa = "game_over"
  
- disegna_parola_solida_go(stringa,x_testo+1,y_testo+1,9)
- disegna_parola_solida_go(stringa,x_testo,y_testo,10) 
+	disegna_parola_solida_go(stringa,x_testo+1,y_testo+1,9) -- bg
+	disegna_parola_solida_go(stringa,x_testo,y_testo,go_cols[go_col_i]) -- fg
+ 
 	-- end bisegnax
 
 	local s = "score: "..gm.score
@@ -257,7 +271,6 @@ function reset_var()
  game_over_frm = 0
  
  -- menu to game var
- menu_to_game_dur = 30
  menu_to_game_frm = 0
 
 	-- bisegnax menu
@@ -271,7 +284,6 @@ function reset_var()
   y = {1,0,1, 1,0,1, 0,1,0, 0,1,0, 0,1,0}
  }
  
-	t_cols = {10,1}
 	t_col_i = 1
 	t_frm = 0
 	t_col_dur = 30
@@ -288,6 +300,10 @@ function reset_var()
   r = {1,1,0, 1,0,1, 1,1,0, 1,0,1, 1,0,1},
   ["_"] = {0,0,0, 0,0,0, 0,0,0, 0,0,0, 0,0,0} 
 	}
+	
+ go_col_i = 1
+ go_frm = 0
+ go_col_dur = 30
 end
 
 function start_music()
