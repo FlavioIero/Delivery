@@ -831,7 +831,7 @@ box.__index = box
 
 -- const
 local inner_col = 1
-local desp_time = 800
+local desp_time = 600 --800
 local c_start_sprt = 41
 local light_sprt = 49
 local light_up = {{0,30},{350,20},{500,10},{600,5}}
@@ -923,7 +923,7 @@ local ship_score = 100
 local score_lose = 200
 local spawn_freq = 20
 local spawn_rate = 0.3 -- 30%
-local max_boxes = 4
+local max_boxes = 4 --4
 
 -- var
 curr_timer = game_timer
