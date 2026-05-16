@@ -117,7 +117,7 @@ function update_menu_to_game()
 end
 
 function update_menu()
-	if btnp(❎) then
+	if btnp(🅾️) or btnp(❎) then
 		state = game_states.menu_to_game 
 		t_col_dur = t_col_dur_on_start
 		--t_frm = 0
@@ -130,7 +130,7 @@ function update_menu()
 end
 
 function update_game_over()
-	if btnp(❎) then
+	if btnp(🅾️) or btnp(❎) then
 		state = game_states.menu 
 		sfx(10)
 	end
@@ -190,7 +190,7 @@ function draw_menu()
 	local s = "high score: "..gm.high_score
 	print_ctr_w(s,64,7)
 	if menu_frm <= show_start then
-		print_ctr_w("press ❎ to start",76,7)
+		print_ctr_w("press 🅾️ to start",76,7)
 	elseif menu_frm >= show_start+not_show_start then
 		menu_frm = 0
 	end
@@ -239,7 +239,7 @@ function draw_game_over()
 		end
 	end
 	if game_over_frm <= show_go_to_menu then
-		print_ctr_w("press ❎ to go to menu",100,7)
+		print_ctr_w("press 🅾️ to go to menu",100,7)
 	elseif game_over_frm >= show_go_to_menu+not_show_go_to_menu then
 		game_over_frm = 0
 	end
@@ -548,7 +548,7 @@ function player:handle_input()
 	
 	--if btn(⬇️) then
 		--y += vel end
-	if btnp(❎) then
+	if btnp(🅾️) then
  	vel_y = jump_vel
 	end
 	y += vel_y
@@ -563,7 +563,7 @@ function player:handle_input()
 		self:move(vector2.new(x,y)) 
  end
 	
-	if btnp(🅾️) and not self.hooked then
+	if btnp(❎) and not self.hooked then
 		self:try_hook() end
 end
 
