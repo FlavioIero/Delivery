@@ -9,7 +9,7 @@ title = 1 -- 1 or 2
 hit_stop = 20
 
 -- var
-state = game_states.game
+state = game_states.menu
 gm = {}
 e = {}
 p = {}
