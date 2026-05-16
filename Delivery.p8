@@ -6,9 +6,10 @@ __lua__
 -- const
 game_states = {menu=1,menu_to_game=2,game=3,game_over=4}
 title = 1 -- 1 or 2
+hit_stop = 30
 
 -- var
-state = game_states.game_over
+state = game_states.game
 gm = {}
 e = {}
 p = {}
@@ -19,6 +20,7 @@ local music_on = false
 -- game var
 local game_start = 0
 local game_start_frm = 0
+local hit_stop_frm
 
 -- menu to game var
 local menu_to_game_dur = 30
@@ -76,6 +78,19 @@ function _draw()
 end
 
 function update_game()
+	if gm.p_hit_enemy then
+		hit_stop_frm += 1
+		if hit_stop_frm >= hit_stop then 
+			if not gm.game_over then
+				gm.p_hit_enemy = false 
+				p:move(player_sp)
+			else
+				state = game_states.game_over
+			end
+			hit_stop_frm = 0
+		end
+		return
+	end
 	game_start_frm += 1
 	if game_start_frm < game_start then 
 		return end
@@ -141,18 +156,14 @@ end
 function draw_game()
 	cls()
 	map(0,0,0,0,16,16)
-	--if game_start_frm < game_start then 
-		--return end
 	gm:draw()
-	for i=1,#gm.houses do
-		print(gm.houses[i].is_free,80,9*i,colors[i])
-	end
 	for k,v in pairs(e) do
 		v:draw()
 	end
 	p:draw()
-	print(curr_timer,4,120,10)
-	
+	local s = ""..curr_timer
+	print_ctr_w(s,3,10)
+	spr(61,48,1)
 end
 
 function draw_menu()
@@ -184,7 +195,7 @@ function draw_menu()
 		end
 	end
 	
- rectfill(0, 63, 128, 63, 0) 
+ rectfill(0, 45, 128, 45, 0) 
 	-- end bisegnax
 	
 	local s = "high score: "..gm.high_score
@@ -221,6 +232,7 @@ function draw_game_over()
 	disegna_parola_solida_go(stringa,x_testo+1,y_testo+1,9) -- bg
 	disegna_parola_solida_go(stringa,x_testo,y_testo,go_cols[go_col_i]) -- fg
  
+ rectfill(0, 35, 128, 35, 0) 
 	-- end bisegnax
 
 	local s = "score: "..gm.score
@@ -252,13 +264,14 @@ function reset_var()
 	p = {}
 	
 	gm = game_mng.new()
-	add(e,enemy.new(36,100,1,80))
-	add(e,enemy.new(84,100,-1,80))
+	add(e,enemy.new(36,100,1,82))
+	add(e,enemy.new(84,100,-1,82))
 	p = player.new(player_sp)
 	
 	-- game var
  game_start = 1 -- 110 is perfect!
  game_start_frm = 0
+ hit_stop_frm = 0
  
 	-- menu-var
  show_start = 20 
@@ -475,20 +488,22 @@ local mov_frm = 0
 local sprt_helix = {4,5}
 local sprt = 3
 local claw_sprts = {unhooked=6,hooked=59}
+-- each helix spr lasts 2 frm
+local c_helix_dur = 2
 
 local kz = {-14,115}
 
 -- var
-local helix_dur = 2 -- each helix spr lasts 2 frm
-local claw_sprt = claw_sprts.unhooked
+local helix_dur
+local claw_sprt
 local vel_y
 local o_vel_y
 -- base
 
 function reset_var_player()
-	helix_dur = 2
+	helix_dur = c_helix_dur
 	claw_sprt = claw_sprts.unhooked
-	vel_y = -1
+	vel_y = 0
 	o_vel_y = -2
 end
 
@@ -511,6 +526,13 @@ function player:update()
 end
 
 function player:update_anim()
+	if vel_y < 0 and abs(vel_y) >= abs(jump_vel)*0.5 then
+		helix_dur = 0
+	elseif vel_y < 0 and abs(vel_y) >= abs(jump_vel)*0.2 then
+		helix_dur = 1
+	else
+		helix_dur = c_helix_dur
+	end
 	self.h_timer += 1
 	if self.h_timer > helix_dur then
 		self.h_sprt_i = (self.h_sprt_i%#sprt_helix)+1
@@ -595,8 +617,8 @@ function player:clamp()
 	end
 	if self.pos.y > 120 then
 		self:move(vector2.new(self.pos.x,120)) 
-	elseif self.pos.y < 11 then
-		self:move(vector2.new(self.pos.x,11))
+	elseif self.pos.y < 13 then
+		self:move(vector2.new(self.pos.x,13))
 	end
 end
 
@@ -643,7 +665,7 @@ function player:unhook()
 end
 
 function player:draw()
-	print(vel_y,30,118,10)
+	--print(vel_y,30,118,10)
 	spr(self.sprt,self.pos.x,self.pos.y)
 	spr(claw_sprt,self.pos.x,self.pos.y+8)
 	spr(self.h_sprt,self.pos.x,self.pos.y-8)
@@ -657,7 +679,9 @@ function player:hit_enemy()
 	gm:player_hit_enemy()
 	if self.hooked then
 		self.box:despawn() end
-	self:move(player_sp)
+	-- moved in main
+	--self:move(player_sp)
+	vel_y = 0
 end
 
 function player:platforms_collide()
@@ -918,7 +942,7 @@ function game_mng.new()
 	for i=1,#colors do
 		add(hs,house.new(i))
 	end
-	return setmetatable({boxes={},houses=hs,score=0,high_score=high_score,record=false,sp_timer=0,hp=max_hp,bad_ending=false},game_mng)
+	return setmetatable({boxes={},houses=hs,score=0,high_score=high_score,record=false,sp_timer=0,hp=max_hp,bad_ending=false,p_hit_enemy=false,game_over=false},game_mng)
 end
 
 function game_mng:box_shipped(b)
@@ -948,7 +972,7 @@ function game_mng:update()
 end
 
 function game_mng:draw()
-	print("score: "..gm.score,80,0,10)
+	print("score: "..gm.score,80,3,10)
 	local b
 	for k,v in pairs(gm.boxes) do
 		if not v.destroy then
@@ -960,7 +984,7 @@ function game_mng:draw()
 		spr(b.sprt,b.pos.x,b.pos.y) end
 	
 	for i=0,gm.hp-1 do
-		spr(60,2+i*9,0)
+		spr(60,2+i*9,1)
 	end
 end
 
@@ -1000,10 +1024,10 @@ function game_mng:player_hit_spikes()
 	p_hit_spikes = true
 end
 
-p_hit_enemy = false
+
 function game_mng:player_hit_enemy()
 	-- debug
-	p_hit_enemy = true
+	self.p_hit_enemy = true
 	self.score -= score_lose
 	if self.score < 0 then
 		self.score = 0 end
@@ -1040,9 +1064,11 @@ function game_mng:decrease_curr_timer(amount)
 end
 
 function game_mng:timer_ended()
+	self.p_hit_enemy = true
 	self:update_score()
 	self.bad_ending = false
-	state = game_states.game_over
+	self.game_over = true
+	
 	stop_music()
 	sfx(5)
 end
@@ -1058,9 +1084,11 @@ function game_mng:update_score()
 end
 
 function game_mng:bad_game_over()
+	self.p_hit_enemy = true
 	self.bad_ending = true
-	state = game_states.game_over
+	--state = game_states.game_over
 	stop_music()
+	self.game_over = true
 	sfx(5)
 end
 __gfx__
@@ -1088,14 +1116,14 @@ __gfx__
 222222222555555225555552aaaaaaaaa555555aa555555accccccccc555555cc555555c7222222774444447788888877aaaaaa77bbbbbb77cccccc77eeeeee7
 222222222555555225555552aaaaaaaaa555555aa555555accccccccc555555cc555555c7222222774444447788888877aaaaaa77bbbbbb77cccccc77eeeeee7
 222222222222222225555552aaaaaaaaaaaaaaaaa555555accccccccccccccccc555555c07777770077777700777777007777770077777700777777007777770
-0777777007777770222222224444444488888888aaaaaaaabbbbbbbbcccccccceeeeeeeeffffffff111111110005500000000000000000000000000000000000
-7ffffff777777777222222224444444488888888aaaaaaaabbbbbbbbcccccccceeeeeeeeffffffff111111110050050000777700000000000000000000000000
-7ffffff777777777222222224444444488888888aaaaaaaabbbbbbbbcccccccceeeeeeeeffffffff111111110005500007888870000000000000000000000000
-7ffffff777777777222222224444444488888888aaaaaaaabbbbbbbbcccccccceeeeeeeeffffffff111111110000000007888870000000000000000000000000
-7ffffff777777777222222224444444488888888aaaaaaaabbbbbbbbcccccccceeeeeeeeffffffff111111110000000007888870000000000000000000000000
-7ffffff777777777222222224444444488888888aaaaaaaabbbbbbbbcccccccceeeeeeeeffffffff111111110000000007888870000000000000000000000000
-7ffffff777777777222222224444444488888888aaaaaaaabbbbbbbbcccccccceeeeeeeeffffffff111111110000000000777700000000000000000000000000
-0777777007777770222222224444444488888888aaaaaaaabbbbbbbbcccccccceeeeeeeeffffffff111111110000000000000000000000000000000000000000
+0777777007777770222222224444444488888888aaaaaaaabbbbbbbbcccccccceeeeeeeeffffffff1111111100055000000000000aaaaaa00000000000000000
+7ffffff777777777222222224444444488888888aaaaaaaabbbbbbbbcccccccceeeeeeeeffffffff111111110050050000777700a777777a0000000000000000
+7ffffff777777777222222224444444488888888aaaaaaaabbbbbbbbcccccccceeeeeeeeffffffff111111110005500007888870a777707adddddddd00000000
+7ffffff777777777222222224444444488888888aaaaaaaabbbbbbbbcccccccceeeeeeeeffffffff111111110000000007888870a777077adddddddd00000000
+7ffffff777777777222222224444444488888888aaaaaaaabbbbbbbbcccccccceeeeeeeeffffffff111111110000000007888870a700777adddddddd00000000
+7ffffff777777777222222224444444488888888aaaaaaaabbbbbbbbcccccccceeeeeeeeffffffff111111110000000007888870a777777adddddddd00000000
+7ffffff777777777222222224444444488888888aaaaaaaabbbbbbbbcccccccceeeeeeeeffffffff111111110000000000777700a777777adddddddd00000000
+0777777007777770222222224444444488888888aaaaaaaabbbbbbbbcccccccceeeeeeeeffffffff1111111100000000000000000aaaaaa0dddddddd00000000
 00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
 00000000011111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111000000000
 00000011111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111000000
@@ -1303,7 +1331,7 @@ __gff__
 0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
 __map__
 0101010101010101010101010101010101010101010101010101010101010101101001010101010101010101010101010101100000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-0202020202020202020202020202020201010101010101010101010101010101101001010101010101010101010101010101100000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+3e3e3e3e3e3e3e3e3e3e3e3e3e3e3e3e01010101010101010101010101010101101001010101010101010101010101010101100000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
 0c0d0e020202020202020202020c0d0e01010101010101010101010101010101101001010101010101010101010101010101100000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
 2022200202020202020202020226282640414d4d4d4d4d4d4d4d4d4d4d4d4e4f101001010101010101010101010101010101100202020202020202020202020202020202020202020202020202020000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
 322132020202020c0d0e020202372737505152535455565758595a5b5c5d5e5f101001010101010101010101010101010101100202020202020202020202020202020202020202020202020202020000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
