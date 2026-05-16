@@ -44,6 +44,7 @@ local game_over_frm = 0
 
 
 function _init()
+ poke(0x5f5c,255)
 	reset_var()
 end
 
@@ -448,11 +449,11 @@ player.__index = player
 -- const
 local invincible = true
 local ignore_spikes = true
-local g = 0.35
-local jump_vel = -4
-local max_fall = 3
+local g = 0.15 --0.35
+local jump_vel = -2 -- -4
+local max_fall = 1.5 -- 3
 
-local vel = 3
+local vel = 2 --3
 local spd = 0
 local mov_frm = 0
 local sprt_helix = {4,5}
@@ -531,7 +532,7 @@ function player:handle_input()
 	
 	--if btn(⬇️) then
 		--y += vel end
-	if btnp(⬆️) then
+	if btnp(❎) then
  	vel_y = jump_vel
 	end
 	y += vel_y
