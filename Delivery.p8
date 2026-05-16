@@ -205,8 +205,6 @@ function draw_menu()
 	elseif menu_frm >= show_start+not_show_start then
 		menu_frm = 0
 	end
-	print_ctr_w("made by 'il flavione'",94,9)
-	print_ctr_w("and 'il bisegnax'",102,9)
 	print_ctr_w("pico-8 @2026",112,9)
 end
 
@@ -269,7 +267,7 @@ function reset_var()
 	p = player.new(player_sp)
 	
 	-- game var
- game_start = 1 -- 110 is perfect!
+ game_start = 110 -- 110 is perfect!
  game_start_frm = 0
  hit_stop_frm = 0
  
