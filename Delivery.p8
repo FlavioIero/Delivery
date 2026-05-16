@@ -896,6 +896,7 @@ game_mng.__index = game_mng
 
 -- const
 local ship_score = 100
+local score_lose = 200
 local spawn_freq = 20
 local spawn_rate = 0.3 -- 30%
 local max_boxes = 4 --4
@@ -1003,7 +1004,9 @@ p_hit_enemy = false
 function game_mng:player_hit_enemy()
 	-- debug
 	p_hit_enemy = true
-	
+	self.score -= score_lose
+	if self.score < 0 then
+		self.score = 0 end
 	if p.hooked then
 		if self:remove_hp(1) <= 0 then
 			self:bad_game_over() 
