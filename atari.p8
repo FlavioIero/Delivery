@@ -5,7 +5,7 @@ __lua__
 
 -- const
 game_states = {menu=1,menu_to_game=2,game=3,game_over=4}
-title = 2 -- 1 or 2
+title = 1 -- 1 or 2
 
 -- var
 state = game_states.menu
@@ -157,8 +157,6 @@ function draw_menu()
  local larghezza_totale = 103
  local x_centro = (128 - larghezza_totale) / 2
  local y_centro = 40 
-	
-	
 		
 	if t_frm <= t_col_dur then
 		t_col_i = 1 
@@ -197,23 +195,36 @@ end
 
 function draw_game_over()
 	cls()
-	map(34,0,0,0,16,16)
+	--map(34,0,0,0,16,16)
+	
+	-- bisegnax
+ local larghezza_testo = 116
+ local x_testo = (128-larghezza_testo) / 2 -- coordinata x: 6
+ local y_testo = 30 
+ 
+ local stringa = "game_over"
+ 
+ disegna_parola_solida_go(stringa,x_testo+1,y_testo+1,9)
+ disegna_parola_solida_go(stringa,x_testo,y_testo,10) 
+	-- end bisegnax
+
 	local s = "score: "..gm.score
 	if gm.bad_ending then
-		print_ctr_w("you're done...",40,8)
-		print_ctr_w(s,50,7)
-		print_ctr_w("your score will not be registered",60,7)
+		print_ctr_w("you're done...",50,8)
+		print_ctr_w(s,60,7)
+		print_ctr_w("your score will",72,7)
+		print_ctr_w("not be registered",80,7)
 	else
-		print_ctr_w("delivery done!",40,7)
+		print_ctr_w("delivery done!",50,7)
 		if gm.record then
 			s = "new high "..s
-			print_ctr_w(s,50,10)
+			print_ctr_w(s,60,10)
 		else
-			print_ctr_w(s,50,7)
+			print_ctr_w(s,60,7)
 		end
 	end
 	if game_over_frm <= show_go_to_menu then
-		print_ctr_w("press ❎ to go to menu",76,7)
+		print_ctr_w("press ❎ to go to menu",100,7)
 	elseif game_over_frm >= show_go_to_menu+not_show_go_to_menu then
 		game_over_frm = 0
 	end
@@ -264,6 +275,18 @@ function reset_var()
 	t_frm = 0
 	t_col_dur = 30
 	t_col_dur_on_start = 4
+	
+	-- bisegnax game over
+ font_atari_go = {
+  g = {1,1,1, 1,0,0, 1,0,1, 1,0,1, 1,1,1},
+  a = {1,1,1, 1,0,1, 1,1,1, 1,0,1, 1,0,1},
+  m = {1,0,1, 1,1,1, 1,0,1, 1,0,1, 1,0,1},
+  e = {1,1,1, 1,0,0, 1,1,0, 1,0,0, 1,1,1},
+  o = {1,1,1, 1,0,1, 1,0,1, 1,0,1, 1,1,1},
+  v = {1,0,1, 1,0,1, 1,0,1, 1,0,1, 0,1,0},
+  r = {1,1,0, 1,0,1, 1,1,0, 1,0,1, 1,0,1},
+  ["_"] = {0,0,0, 0,0,0, 0,0,0, 0,0,0, 0,0,0} 
+	}
 end
 
 function start_music()
@@ -299,6 +322,28 @@ function disegna_parola_solida(testo, x, y, col)
    end
   end
   cx += 13 -- spazio fisso tra le lettere
+ end
+end
+
+function disegna_parola_solida_go(testo,x,y,col)
+ local cx = x
+ for i=1, #testo do
+  local let = sub(testo, i, i)
+  local dati = font_atari_go[let]
+  
+  if dati != nil then
+   for r=0,4 do         
+    for c=0,2 do     
+     local idx = r*3+c+1
+     if dati[idx] == 1 then
+      local px = cx+c*4
+      local py = y+r*2  
+      rectfill(px,py,px+3,py+1,col)
+     end
+    end
+   end
+  end
+  cx += 13 
  end
 end
 -->8
