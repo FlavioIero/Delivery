@@ -8,7 +8,7 @@ game_states = {menu=1,menu_to_game=2,game=3,game_over=4}
 title = 1 -- 1 or 2
 
 -- var
-state = game_states.menu
+state = game_states.game
 gm = {}
 e = {}
 p = {}
@@ -242,7 +242,7 @@ function reset_var()
 	p = player.new(player_sp)
 	
 	-- game var
- game_start = 110 -- 110 is perfect!
+ game_start = 1 -- 110 is perfect!
  game_start_frm = 0
  
 	-- menu-var
@@ -446,6 +446,12 @@ player = {}
 player.__index = player
 
 -- const
+local invincible = true
+local ignore_spikes = true
+local g = 0.35
+local jump_vel = -4
+local max_fall = 3
+
 local vel = 3
 local spd = 0
 local mov_frm = 0
@@ -458,16 +464,20 @@ local kz = {14,115}
 -- var
 local helix_dur = 2 -- each helix spr lasts 2 frm
 local claw_sprt = claw_sprts.unhooked
+local vel_y
+local o_vel_y
 -- base
 
 function reset_var_player()
 	helix_dur = 2
 	claw_sprt = claw_sprts.unhooked
+	vel_y = -1
+	o_vel_y = -2
 end
 
 function player.new(pos)
 	reset_var_player()
-	return setmetatable({pos=pos,sprt=sprt,hooked=false,box=nil,h_sprt=sprt_helix[1],h_sprt_i=1,h_timer=0},player)
+	return setmetatable({pos=pos,sprt=sprt,hooked=false,box=nil,h_sprt=sprt_helix[1],h_sprt_i=1,h_timer=0,o_y=pos.y},player)
 end
 
 function player:update()
@@ -478,6 +488,8 @@ function player:update()
 	end
 	self:update_anim()
 	self:handle_input()
+	self:clamp()
+	self:apply_gravity()
 	self:check_collisions()
 end
 
@@ -492,6 +504,8 @@ end
 
 -- temp
 function player:handle_input()
+	self.o_y = self.pos.y
+	o_vel_y = vel_y
 	local lx = self.pos.x
 	local ly = self.pos.y
 	local x = self.pos.x
@@ -515,10 +529,12 @@ function player:handle_input()
  end
 	
 	
-	if btn(⬇️) then
-		y += vel end
-	if btn(⬆️) then
-		y -= vel end
+	--if btn(⬇️) then
+		--y += vel end
+	if btnp(⬆️) then
+ 	vel_y = jump_vel
+	end
+	y += vel_y
 		
 	self:move(vector2.new(x,y))
 	while self:platforms_collide() and zy ~= 0 do
@@ -534,6 +550,13 @@ function player:handle_input()
 		self:try_hook() end
 end
 
+function player:apply_gravity()
+	vel_y += g
+
+ if vel_y > max_fall then
+  vel_y = max_fall end
+end
+
 -- temp
 function player:shift(s)
 	self.pos = self.pos+s
@@ -547,23 +570,32 @@ function player:move(p)
 	 self.box.pos = p+vector2.new(0,10) end
 end
 
-function player:check_collisions()
-	if self.pos.y <= kz[1] or self.pos.y >= kz[2] then
-		self:hit_spikes() 
-		return 
-	end
+function player:clamp()
 	if self.pos.x > 120 then
 		self:move(vector2.new(120,self.pos.y))
 	elseif self.pos.x < 0 then
 		self:move(vector2.new(0,self.pos.y))
 	end
-	
-	-- check other solid collisions
+	if self.pos.y > 120 then
+		self:move(vector2.new(self.pos.x,120)) 
+	elseif self.pos.y < 8 then
+		self:move(vector2.new(self.pos.x,8))
+	end
+end
 
-	for k,v in pairs(e) do
-		if collide_circle(self.pos.x,self.pos.y,p_r,v.x,v.y,e_r) then
-		 self:hit_enemy()
-		 return
+function player:check_collisions()
+	if not invincible and not ignore_spikes then
+		if self.pos.y <= kz[1] or self.pos.y >= kz[2] then
+			self:hit_spikes() 
+			return 
+		end
+	end	
+	if not invincible then
+		for k,v in pairs(e) do
+			if collide_circle(self.pos.x,self.pos.y,p_r,v.x,v.y,e_r) then
+			 self:hit_enemy()
+			 return
+			end
 		end
 	end
 end
@@ -594,6 +626,7 @@ function player:unhook()
 end
 
 function player:draw()
+	print(vel_y,30,118,10)
 	spr(self.sprt,self.pos.x,self.pos.y)
 	spr(claw_sprt,self.pos.x,self.pos.y+8)
 	spr(self.h_sprt,self.pos.x,self.pos.y-8)
@@ -832,11 +865,11 @@ high_score = 0
 
 -- can change
 -- default player_sp = 8,32
-player_sp = vector2.new(10,80) -- player spawn point 
+player_sp = vector2.new(40,80) -- player spawn point 
 p_r = 3.5 -- player hb range
 e_r = 3.5 -- enemy hb range
 game_timer = 100
-max_hp = 3
+max_hp = 1000 -- 3
 
 -->8
 -- game_manager --
