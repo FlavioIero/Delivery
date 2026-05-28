@@ -1130,6 +1130,7 @@ particle_manager = {
 	
 	new = function(self,tbl)
 		tbl = tbl or {}
+		tbl.parts = {}
 		setmetatable(tbl,{__index=self})
 		return tbl
 	end,
@@ -1167,9 +1168,7 @@ particle_manager = {
 	end,
 	
 	delete_all = function(self)
-		for p in all(self.parts) do
-			del(self.parts,p)
-		end
+		self.parts = {}
 	end,
 }
 __gfx__
