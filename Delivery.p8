@@ -52,6 +52,8 @@ local go_col_dur = 30
 
 
 function _init()
+	cartdata("delivery-1")
+ high_score=dget(0)
 	poke(0x5f2d,1)
  poke(0x5f5c,255)
 	reset_var()
@@ -1077,6 +1079,7 @@ function game_mng:update_score()
 		-- updates global hs so that it 
 		-- is easier to reset variables
 		high_score = self.score
+		dset(0,high_score)
 		self.record = true
 	end
 end
